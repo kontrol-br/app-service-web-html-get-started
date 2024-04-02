@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - kontrolapp
+name: Build and deploy JAR app to Azure Web App - kontrolapp
 
 on:
   push:
@@ -16,25 +16,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
+      - name: Set up Java version
+        uses: actions/setup-java@v1
         with:
-          node-version: '18.x'
+          java-version: '8'
 
-      - name: npm install, build, and test
-        run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
-
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+      - name: Build with Maven
+        run: mvn clean install
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
         with:
-          name: node-app
-          path: release.zip
+          name: java-app
+          path: '${{ github.workspace }}/target/*.jar'
 
   deploy:
     runs-on: ubuntu-latest
@@ -44,28 +38,25 @@ jobs:
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
-
+  
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v3
         with:
-          name: node-app
-
-      - name: Unzip artifact for deployment
-        run: unzip release.zip
+          name: java-app
       
       - name: Login to Azure
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F44CE637F6824A1F9E9F58D27A6723CC }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_E60C145AF7124E7DA977A99CD27EBEDF }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_DAAFD9EBDCD2486E9E1F73DAFF3793E3 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_B7091CD77BC04B60899ADBEC7E53F279 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7D2E45CDDE15490B85E3538D9E74597C }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_55187D46C3FB410882F757E48A8E19B8 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'kontrolapp'
           slot-name: 'Production'
-          package: .
+          package: '*.jar'
           
